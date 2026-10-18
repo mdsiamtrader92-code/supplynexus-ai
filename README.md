@@ -8,7 +8,7 @@ Explainable, simulation-based supply chain intelligence for the **Supply Chain N
 
 ## Links
 - Demo video: [add YouTube link here]
-- Live demo: [add Render link here]
+- Live demo: [https://supplynexus-ai.onrender.com/]
 
 ## What it does
 Flow: Track, Verify, Trust, Detect, Explain, Alert, Decide, Audit, on one shipment (Gazipur factory, Dhaka ICD, Chattogram Port, Colombo, Hamburg).
