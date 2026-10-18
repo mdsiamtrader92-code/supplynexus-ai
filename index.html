@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SupplyNexus AI — Shipment trust and anomaly monitor</title>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#EEF2F5;--panel:#fff;--ink:#12263A;--mute:#5B6B7A;--line:#D5DEE6;--teal:#0F766E;--amber:#B45309;--red:#B42318;--blue:#1D4ED8;--ok:#15803D;--soft:#F6F9FB}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D1822;--panel:#142431;--ink:#E6EEF5;--mute:#93A5B5;--line:#264054;--teal:#2DD4BF;--amber:#F5A524;--red:#FF7B72;--blue:#7AA2FF;--ok:#4ADE80;--soft:#10202C}}
+:root[data-theme="dark"]{--bg:#0D1822;--panel:#142431;--ink:#E6EEF5;--mute:#93A5B5;--line:#264054;--teal:#2DD4BF;--amber:#F5A524;--red:#FF7B72;--blue:#7AA2FF;--ok:#4ADE80;--soft:#10202C}
+*,*:before,*:after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Public Sans",system-ui,sans-serif}
+h1,h2,h3{font-family:"Space Grotesk","Public Sans",sans-serif;margin:0}
+.wrap{max-width:1180px;margin:0 auto;padding:16px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+header h1{font-size:26px}
+header p{margin:0;color:var(--mute);max-width:560px}
+.flow{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px;padding:0;list-style:none}
+.flow li{padding:5px 12px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mute);font-size:13px}
+.flow li{cursor:pointer}.flow li:hover{border-color:var(--blue)}.flow li:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.flash{outline:3px solid var(--blue);outline-offset:4px;border-radius:10px}
+.flow li.on{border-color:var(--teal);color:var(--teal);font-weight:600}
+.flow li.warn{border-color:var(--amber);color:var(--amber);font-weight:600}
+.flow li.bad{border-color:var(--red);color:var(--red);font-weight:600}
+.grid{display:grid;grid-template-columns:1.3fr 1fr;gap:14px}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.col{display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px}
+.panel h2{font-size:17px;margin-bottom:8px}
+.sub{color:var(--mute);font-size:13px;margin:0 0 8px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:inherit;font-weight:600;padding:8px 12px;border-radius:7px;border:1px solid var(--line);background:var(--soft);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--teal)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+button.dng{border-color:var(--red);color:var(--red)}
+button:disabled{opacity:.45;cursor:default}
+label.t{display:flex;gap:6px;align-items:center;padding:6px 10px;border:1px solid var(--line);border-radius:7px;background:var(--soft);cursor:pointer;font-size:14px}
+svg{width:100%;height:auto;display:block}
+.svgt{fill:var(--ink);font:12px "Public Sans",sans-serif}
+.svgm{fill:var(--mute);font:11px "Public Sans",sans-serif}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px}
+.stat{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}
+.stat b{display:block;font:700 22px "Space Grotesk",sans-serif}
+.stat span{font-size:12px;color:var(--mute)}
+.big{font:700 54px/1 "Space Grotesk",sans-serif}
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;border:1px solid currentColor}
+.LOW,.ok{color:var(--ok)}.MEDIUM,.mid{color:var(--amber)}.HIGH,.hi{color:var(--red)}
+.bars div{display:grid;grid-template-columns:150px 1fr 40px;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.bars i{display:block;height:8px;border-radius:4px;background:var(--red)}
+.sig{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.sig span{padding:2px 10px;border-radius:6px;border:1px solid var(--line);color:var(--mute);font-size:13px}
+.sig span.s{border-color:var(--red);color:var(--red);font-weight:600}
+.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.m{padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.m b{display:block;font:700 26px "Space Grotesk",sans-serif}
+.m span{font-size:12px;color:var(--mute)}
+.alert{border-left:5px solid var(--line);padding-left:12px}
+.alert.b-HIGH{border-color:var(--red)}.alert.b-MEDIUM{border-color:var(--amber)}.alert.b-LOW{border-color:var(--ok)}
+.alert ul{margin:6px 0;padding-left:18px}
+.ragbox{margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--soft)}.ragbox ul{margin:4px 0;padding-left:18px}.rg{margin:8px 0}
+.ghost{border:1px dashed var(--line);border-radius:8px;padding:10px;color:var(--mute);font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+td.h{font:12px ui-monospace,Menlo,Consolas,monospace;color:var(--mute);white-space:nowrap}
+tr.bad td{background:rgba(180,35,24,.12)}
+.scroll{overflow-x:auto}
+.banner{padding:8px 12px;border-radius:8px;border:1px solid var(--ok);color:var(--ok);font-weight:600;margin:8px 0}
+.banner.f{border-color:var(--red);color:var(--red)}
+footer{margin-top:14px;font-size:13px;color:var(--mute)}
+@media(prefers-reduced-motion:no-preference){.flow li{transition:border-color .3s,color .3s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>SupplyNexus AI</h1>
+  <p>Where is the shipment, can we trust the tracking data, what is abnormal, and what should the operator do? AI recommends, the human decides.</p>
+</header>
+<ol class="flow" id="flow"></ol>
+<div class="grid">
+<div class="col">
+  <section class="panel">
+    <h2>Simulation Control Center</h2>
+    <p class="sub">All RFID, GPS and AIS data is simulated. No hardware is connected.</p>
+    <div class="row" style="margin-bottom:8px">
+      <button id="pN">Normal shipment</button>
+      <button id="p1" class="pri">Scenario 1: quantity + sensor mismatch</button>
+      <button id="p2" class="pri">Scenario 2: route deviation + delay</button>
+    </div>
+    <div class="row">
+      <label class="t"><input type="checkbox" id="cq"> Quantity short</label>
+      <label class="t"><input type="checkbox" id="cm"> RFID/GPS mismatch</label>
+      <label class="t"><input type="checkbox" id="cr"> Route deviation</label>
+      <label class="t"><input type="checkbox" id="cd"> Delay</label>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="adv">Advance to next checkpoint</button>
+      <button id="rst" class="dng">Reset demo</button>
+    </div>
+  </section>
+  <section class="panel" id="p-map">
+    <h2>Journey map: SNX-001, Gazipur to Hamburg</h2>
+    <p class="sub">Schematic route drawn as SVG, so it works offline. Not to scale.</p>
+    <svg id="map" viewBox="0 0 800 320" role="img" aria-label="Shipment journey map"></svg>
+    <div id="scan" class="sub"></div>
+  </section>
+  <section class="panel" id="p-audit">
+    <h2>Audit History</h2>
+    <p class="sub">Each entry holds the SHA-256 hash of the entry before it. Editing an old entry breaks every link after it.</p>
+    <div class="row"><button id="ver">Verify chain</button><button id="tam" class="dng">Tamper test</button><button id="res">Restore</button></div>
+    <div id="ban"></div>
+    <div class="scroll"><table><thead><tr><th>#</th><th>Time</th><th>Event</th><th>Data</th><th>Prev</th><th>Hash</th></tr></thead><tbody id="aud"></tbody></table></div>
+  </section>
+</div>
+<div class="col">
+  <section class="panel">
+    <h2>Risk, trust and confidence</h2>
+    <div class="row" style="justify-content:space-between;align-items:flex-end">
+      <div><div class="big" id="risk">0</div><span class="sub">Risk score out of 100</span></div>
+      <span class="chip" id="band">LOW</span>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div class="metrics" style="margin-top:10px">
+      <div class="m" id="trustbox"><b id="trust">100</b><span>Sensor trust out of 100</span></div>
+      <div class="m"><b id="conf">N/A</b><span>Signal agreement (confidence)</span></div>
+      <div class="m"><b id="rev">None</b><span>Human review</span></div>
+    </div>
+    <p class="sub" style="margin-top:10px">Signals supporting the anomaly, out of 5:</p>
+    <div class="sig" id="sig"></div>
+    <div class="stats" id="qtyblock">
+      <div class="stat"><b>1000</b><span>Expected units</span></div>
+      <div class="stat"><b id="ver2">1000</b><span>Verified units</span></div>
+      <div class="stat"><b id="unv">0</b><span>Unverified units</span></div>
+    </div>
+  </section>
+  <section class="panel" id="p-alert">
+    <h2>Alert Center</h2>
+    <div id="alert"></div>
+  </section>
+  <section class="panel">
+    <h2>ML anomaly score</h2>
+    <div class="ghost" id="ml">Backend not connected. Run the Python server to see the Isolation Forest score here. The rule-based demo still works without it.</div>
+  </section>
+</div>
+</div>
+<footer>
+  Prototype notes: the data is synthetic, the risk engine is rule-based and gives the same result for the same input, and explanations are written from templates. Production would replace the Simulation Adapter with RFID, GPS, AIS and TMS/ERP adapters. Confidence is a simple count of agreeing signals, not a calibrated probability.
+</footer>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+const CP=[{n:'Factory, Gazipur',x:70,y:225},{n:'Dhaka ICD',x:170,y:180},{n:'Chattogram Port',x:290,y:245},{n:'Colombo (transshipment)',x:470,y:280},{n:'Hamburg buyer DC',x:730,y:80}];
+const S={qty:0,mism:0,route:0,delay:0,pos:0,dec:null};
+const EXP=1000;
+
+function calc(){
+  const ver=S.qty?920:EXP, unv=EXP-ver, disc=unv/EXP*100;
+  const parts=[];
+  if(S.qty)parts.push(['Quantity discrepancy',20+Math.min(15,Math.round(disc))]);
+  if(S.mism)parts.push(['RFID/GPS mismatch',35]);
+  if(S.route)parts.push(['Route deviation',20]);
+  if(S.delay)parts.push(['Delay',15]);
+  const risk=Math.min(100,parts.reduce((a,p)=>a+p[1],0));
+  const trust=100-(S.mism?55:0);
+  const sup=[];
+  if(S.mism)sup.push('RFID','GPS');
+  if(S.qty)sup.push('Quantity');
+  if(S.route)sup.push('Route');
+  if(S.delay)sup.push('Timing');
+  const anom=sup.length>0, conf=anom?Math.round(sup.length/5*100):null;
+  const band=risk>=60?'HIGH':risk>=30?'MEDIUM':'LOW';
+  const review=risk>=60?'Required':(anom&&conf<50)?'Recommended':'None';
+  return{ver,unv,disc,parts,risk,trust,sup,anom,conf,band,review};
+}
+
+function explain(m){
+  if(!m.anom)return 'All signals agree and the quantity matches. No action needed.';
+  const s=[];
+  if(S.qty)s.push(`${m.unv} units are unverified (${m.disc}% of the shipment).`);
+  if(S.mism)s.push('RFID and GPS disagree about where the shipment is, so the tracking data is less reliable.');
+  if(S.route)s.push('The shipment left its planned route.');
+  if(S.delay)s.push('It is behind the expected schedule.');
+  s.push(`It is classified ${m.band} risk with ${m.conf}% signal agreement.`);
+  s.push(m.review==='Required'?'Human investigation is required.':m.review==='Recommended'?'Risk is not high, but agreement between signals is low, so a human should review it.':'');
+  return s.join(' ');
+}
+
+let EXC=null;let RAGC=null;
+const fkey=()=>[S.qty,S.mism,S.route,S.delay].join('');
+const esc=t=>String(t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+function exHtml(){return EXC&&EXC.key===fkey()?`<p class="sub"><b>${esc(EXC.source)}</b>: ${esc(EXC.text)}</p>`:'';}
+function ragHtml(){
+  if(!RAGC||RAGC.key!==fkey()||!RAGC.items.length)return '';
+  return `<div class="ragbox"><b>Similar past cases</b> <span class="sub">(synthetic examples, keyword match)</span>`+RAGC.items.map(i=>`<div class="rg"><b>${esc(i.id)}: ${esc(i.title)}</b> <span class="sub">score ${i.score.toFixed(2)}</span><div class="sub">${esc(i.finding)}</div><ul>${i.checks.map(c=>`<li>${esc(c)}</li>`).join('')}</ul></div>`).join('')+`<p class="sub">Suggested checks only. The operator decides.</p></div>`;
+}
+async function loadRAG(){
+  const k=fkey();
+  if(RAGC&&RAGC.key===k)return;
+  RAGC={key:k,items:[]};
+  try{
+    const r=await fetch('/api/similar',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qty:!!S.qty,mism:!!S.mism,route:!!S.route,delay:!!S.delay})});
+    if(!r.ok)throw new Error('bad');
+    const d=await r.json();
+    RAGC={key:k,items:d.items};
+    if(d.items.length){log('Similar cases retrieved',d.items.map(i=>i.id).join(', '));}
+    render();
+  }catch(e){}
+}
+async function aiExplain(){
+  const b=$('aiBtn');b.disabled=true;b.textContent='Writing explanation...';
+  try{
+    const r=await fetch('/api/explain',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qty:!!S.qty,mism:!!S.mism,route:!!S.route,delay:!!S.delay})});
+    if(!r.ok)throw new Error('bad');
+    const d=await r.json();EXC={key:fkey(),text:d.text,source:d.source};log('AI explanation',d.source);
+  }catch(e){EXC={key:fkey(),text:'Backend not connected. The template explanation above still applies.',source:'Offline'};}
+  render();
+}
+function render(){
+  mirror('/api/state',{qty:S.qty,mism:S.mism,route:S.route,delay:S.delay,pos:S.pos,dec:S.dec});
+  const m=calc();
+  $('risk').textContent=m.risk;
+  $('band').textContent=m.band;$('band').className='chip '+m.band;
+  $('bars').innerHTML=m.parts.length?m.parts.map(p=>`<div><span>${p[0]}</span><i style="width:${p[1]*2}px;max-width:100%"></i><b>+${p[1]}</b></div>`).join(''):'<p class="sub">No risk contributions.</p>';
+  $('trust').textContent=m.trust;
+  $('conf').textContent=m.conf===null?'N/A':m.conf+'%';
+  $('rev').textContent=m.review;
+  $('rev').className=m.review==='Required'?'hi':m.review==='Recommended'?'mid':'ok';
+  $('sig').innerHTML=['RFID','GPS','Quantity','Route','Timing'].map(x=>`<span class="${m.sup.includes(x)?'s':''}">${x}</span>`).join('');
+  $('ver2').textContent=m.ver;$('unv').textContent=m.unv;
+  ['cq','cm','cr','cd'].forEach((id,i)=>$(id).checked=!!S[['qty','mism','route','delay'][i]]);
+  $('adv').disabled=S.pos>=4;
+  // alert
+  const need=m.anom||m.review!=='None';
+  if(!need){$('alert').innerHTML='<div class="ghost">No alerts. SNX-001 looks consistent. Confidence is N/A because there is no anomaly to be confident about.</div>';}
+  else{
+    const rec=m.review==='Required'?'Investigate':'Review';
+    $('alert').innerHTML=`<div class="alert b-${m.band}"><b class="${m.band}">${m.band} — Shipment SNX-001</b>
+    <div class="sub">Risk ${m.risk} · Trust ${m.trust} · Confidence ${m.conf}% · Human review ${m.review.toLowerCase()}</div>
+    <ul>${m.parts.map(p=>`<li>${p[0]} (+${p[1]})</li>`).join('')}</ul>
+    <p style="margin:6px 0">${explain(m)}</p>
+    <div id="aiex">${exHtml()}</div><div class="row" style="margin:6px 0"><button id="aiBtn">Explain with local AI</button></div>
+    ${ragHtml()}
+    <p class="sub">Recommended action: <b>${rec}</b></p>
+    ${S.dec?`<div class="banner">Human decision recorded: ${S.dec}</div>`:`<div class="row"><button data-d="Continue">Continue</button><button data-d="Investigate" class="pri">Investigate</button><button data-d="Hold" class="dng">Hold</button></div>`}</div>`;
+    document.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>decide(b.dataset.d));
+    $('aiBtn').onclick=aiExplain;
+    loadRAG();
+  }
+  // pipeline
+  const st=[['Track',''],['Verify',S.qty?'warn':''],['Trust',S.mism?'bad':''],['Detect',m.anom?'warn':''],['Explain',''],['Alert',need?(m.band==='HIGH'?'bad':'warn'):''],['Decide',S.dec?'on':''],['Audit','']];
+  const T={Track:'p-map',Verify:'qtyblock',Trust:'trustbox',Detect:'sig',Explain:'p-alert',Alert:'p-alert',Decide:'p-alert',Audit:'p-audit'};
+  $('flow').innerHTML=st.map(([n,c])=>`<li role="button" tabindex="0" title="Go to ${n}" data-t="${T[n]}" class="${c||'on'}${n==='Decide'&&!S.dec?'" style="color:var(--mute);border-color:var(--line)':''}">${n}</li>`).join('');
+  drawMap();
+}
+
+function drawMap(){
+  const done=i=>i<=S.pos;
+  let s=`<rect x="0" y="0" width="800" height="320" fill="var(--soft)" rx="8"/>`;
+  s+=`<path d="M0,0 L330,0 L330,200 L230,320 L0,320Z" fill="none"/>`;
+  for(let i=0;i<4;i++){const a=CP[i],b=CP[i+1];s+=`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${done(i+1)?'var(--teal)':'var(--line)'}" stroke-width="${done(i+1)?4:3}" stroke-dasharray="${done(i+1)?'':'6 6'}"/>`;}
+  if(S.route)s+=`<polyline points="170,180 235,110 330,165 290,245" fill="none" stroke="var(--amber)" stroke-width="3" stroke-dasharray="7 5"/><circle cx="235" cy="110" r="7" fill="var(--amber)"/><text class="svgt" x="248" y="106">Deviation point</text>`;
+  CP.forEach((c,i)=>{s+=`<circle cx="${c.x}" cy="${c.y}" r="8" fill="${done(i)?'var(--teal)':'var(--panel)'}" stroke="var(--teal)" stroke-width="2"/><text class="svgt" x="${i===4?c.x+12:c.x-30}" text-anchor="${i===4?'end':'start'}" y="${c.y+(i===4?-16:26)}">${c.n}</text>`;});
+  const c=CP[S.pos];
+  s+=`<circle cx="${c.x}" cy="${c.y}" r="14" fill="none" stroke="var(--teal)" stroke-width="3"/><text class="svgm" x="${c.x+18}" y="${c.y-12}">RFID scan</text>`;
+  if(S.mism&&S.pos>=1){const gx=c.x+60,gy=c.y-60;s+=`<line x1="${c.x}" y1="${c.y}" x2="${gx}" y2="${gy}" stroke="var(--red)" stroke-dasharray="4 4"/><rect x="${gx-9}" y="${gy-9}" width="18" height="18" fill="var(--red)" transform="rotate(45 ${gx} ${gy})"/><text class="svgt" x="${gx+14}" y="${gy+4}" style="fill:var(--red)">GPS fix is elsewhere</text>`;}
+  $('map').innerHTML=s;
+  $('scan').textContent=`Last RFID scan: ${c.n} gate. GPS: ${S.mism&&S.pos>=1?'position does not match the RFID scan':'matches the RFID scan'}. ${S.delay?'Running behind schedule.':'On schedule.'}`;
+}
+
+// audit chain
+let LOG=[],q=Promise.resolve(),bad=-1,note='';
+let mq=Promise.resolve();
+const mirror=(p,b)=>{mq=mq.then(()=>fetch(p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).catch(()=>{}));};
+async function sha(t){try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(t));return[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}catch(e){let h=5381;for(const ch of t)h=(h*33^ch.charCodeAt(0))>>>0;return('00000000'+h.toString(16)).repeat(8);}}
+async function add(type,data){
+  const prev=LOG.length?LOG[LOG.length-1].hash:'0'.repeat(64);
+  const ts=new Date().toISOString().slice(11,19);
+  const hash=await sha(prev+'|'+type+'|'+data+'|'+ts);
+  LOG.push({ts,type,data,orig:data,prev,hash});
+  mirror('/api/audit',{type,data,ts});
+  renderAudit();
+}
+const log=(t,d)=>{q=q.then(()=>add(t,d));return q;};
+function renderAudit(){
+  $('aud').innerHTML=LOG.map((e,i)=>`<tr class="${i===bad?'bad':''}"><td>${i+1}</td><td>${e.ts}</td><td>${e.type}</td><td>${e.data}</td><td class="h">${e.prev.slice(0,8)}</td><td class="h">${e.hash.slice(0,8)}</td></tr>`).join('');
+  $('ban').innerHTML=note;
+}
+async function verify(){
+  await q;bad=-1;
+  for(let i=0;i<LOG.length;i++){const e=LOG[i];const p=i?LOG[i-1].hash:'0'.repeat(64);
+    if(e.prev!==p||await sha(p+'|'+e.type+'|'+e.data+'|'+e.ts)!==e.hash){bad=i;break;}}
+  note=bad<0?'<div class="banner">Audit chain intact. All hashes match.</div>':`<div class="banner f">Audit Chain Integrity Failed. Entry #${bad+1} does not match its hash.</div>`;
+  renderAudit();
+}
+async function tamper(){
+  await q;if(!LOG.length)return;
+  let i=LOG.findIndex(e=>e.type==='Risk calculated');if(i<0)i=LOG.length-1;
+  const e=LOG[i];e.data=/\d+/.test(e.data)?e.data.replace(/\d+/,m=>String(+m+10)):e.data+' (edited)';
+  await verify();
+}
+async function restore(){
+  await q;LOG.forEach(e=>e.data=e.orig);await verify();
+  if(bad<0){note='<div class="banner">Audit Chain Restored. Verified original state.</div>';renderAudit();}
+}
+
+async function refreshML(){
+  const box=$('ml');
+  try{
+    const r=await fetch('/api/evaluate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({qty:!!S.qty,mism:!!S.mism,route:!!S.route,delay:!!S.delay})});
+    if(!r.ok)throw new Error('bad');
+    const d=await r.json();
+    box.className='';
+    box.innerHTML=`<div class="metrics"><div class="m"><b>${d.ml_score.toFixed(3)}</b><span>Isolation Forest score (higher is more unusual)</span></div><div class="m"><b class="${d.ml_flag?'hi':'ok'}">${d.ml_flag?'Flagged':'Normal'}</b><span>ML verdict</span></div><div class="m"><b>${d.rules.risk}</b><span>Rule risk, not changed by ML</span></div></div><p class="sub" style="margin-top:8px">${d.ml_only?'The ML model flags this shipment although the rules see little risk. Human review recommended.':'The ML score sits beside the rules and never changes the risk score.'} Trained on synthetic data only.</p>`;
+    return d;
+  }catch(e){box.className='ghost';box.textContent='Backend not connected. Run the Python server to see the Isolation Forest score here. The rule-based demo still works without it.';return null;}
+}
+function changed(label){
+  S.dec=null;const m=calc();render();
+  log('Scenario',label);
+  log('Risk calculated',`risk ${m.risk}, trust ${m.trust}, confidence ${m.conf===null?'N/A':m.conf+'%'}`);
+  if(m.anom)log('Alert generated',`${m.band}, human review ${m.review.toLowerCase()}`);
+  refreshML().then(d=>{if(d)log('ML scored',`score ${d.ml_score}, ${d.ml_flag?'flagged':'normal'}`);});
+  note='';
+}
+function preset(o,label){Object.assign(S,{qty:0,mism:0,route:0,delay:0},o);S.pos=Math.max(S.pos,2);changed(label);}
+function decide(d){S.dec=d;render();log('Human decision',`${d} on SNX-001 (risk ${calc().risk})`);}
+function reset(){
+  Object.assign(S,{qty:0,mism:0,route:0,delay:0,pos:0,dec:null});LOG=[];bad=-1;note='';q=Promise.resolve();
+  mirror('/api/audit/reset',{});
+  render();renderAudit();
+  log('Shipment created','SNX-001, 1000 units, Gazipur to Hamburg');
+  refreshML();
+}
+function go(id){const e=$(id);if(!e)return;e.scrollIntoView({behavior:'smooth',block:'center'});e.classList.add('flash');setTimeout(()=>e.classList.remove('flash'),1600);}
+$('flow').onclick=e=>{const li=e.target.closest('li');if(li)go(li.dataset.t);};
+$('flow').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){const li=e.target.closest('li');if(li){e.preventDefault();go(li.dataset.t);}}};
+$('pN').onclick=()=>preset({},'Normal shipment');
+$('p1').onclick=()=>preset({qty:1,mism:1},'Scenario 1: quantity + sensor mismatch');
+$('p2').onclick=()=>preset({route:1,delay:1},'Scenario 2: route deviation + delay');
+[['cq','qty'],['cm','mism'],['cr','route'],['cd','delay']].forEach(([id,k])=>$(id).onchange=e=>{S[k]=e.target.checked?1:0;S.pos=Math.max(S.pos,2);changed('Manual toggle: '+k+(S[k]?' on':' off'));});
+$('adv').onclick=()=>{if(S.pos<4){S.pos++;render();log('RFID scan',CP[S.pos].n+' gate');log('GPS update',S.mism&&S.pos>=1?'position inconsistent with RFID':'consistent with RFID');if(S.pos===4)log('Delivery','Arrived at Hamburg buyer DC');}};
+$('rst').onclick=reset;$('ver').onclick=verify;$('tam').onclick=tamper;$('res').onclick=restore;
+reset();
+</script>
+</body>
+</html>
